@@ -8,6 +8,9 @@ type GameState = {
     activeShape: Shape | undefined
     hold: Shape | undefined
     holdAllowed: boolean
+    score: number
+    level: number
+    linesCleared: number
 }
 
 const defaultColor = "gray"
@@ -89,6 +92,22 @@ export default class GameField implements Field {
             const newLine = new Array(this.rows).fill(0)
             this.state.field.unshift(newLine)
         }
+
+        this.addScore(linesToRemove.length)
+        this.state.linesCleared = linesToRemove.length
+        this.checkLevel()
+    }
+
+    checkLevel() {
+        if (this.state.linesCleared < 10) {
+            return
+        }
+        const level = Math.trunc(this.state.linesCleared / 10)
+        this.setLevel(level)
+    }
+
+    setLevel(level: number) {
+        this.state.level = level
     }
 
     Draw() {
@@ -97,6 +116,35 @@ export default class GameField implements Field {
         this.drawGrid()
         this.drawShapesQueue()
         this.drawHold()
+        this.drawScoreBar()
+    }
+
+    addScore(lines: number) {
+        if (lines === 0) {
+            return
+        }
+
+        const multiplier = this.state.level + 1
+
+        switch (lines) {
+            case 1:
+                this.state.score += 40 * multiplier
+                break
+            case 2:
+                this.state.score += 100 * multiplier
+                break
+            case 3:
+                this.state.score += 300 * multiplier
+                break
+            case 4:
+                this.state.score += 1200 * multiplier
+                break
+            default:
+                lines = lines - 4
+                this.state.score += (1200 * multiplier) + (lines * 1000)
+        }
+
+        console.log(this.state.score)
     }
 
     generateDefaultGameState(): GameState {
@@ -106,6 +154,9 @@ export default class GameField implements Field {
             activeShape: undefined,
             holdAllowed: true,
             hold: undefined,
+            score: 0,
+            level: 0,
+            linesCleared: 0,
         }
 
         for (let i = 0; i < this.lines; i++) {
@@ -198,6 +249,20 @@ export default class GameField implements Field {
         }
     }
 
+    drawScoreBar() {
+        const padding = 200 / 6
+        const basePoint = {
+            X: this.startPosition.X + this.width + 200 / 6,
+            Y: this.startPosition.Y + 670,
+        }
+        this.drawSquare(basePoint.X, basePoint.Y, 200, 130, "black")
+
+        this.ctx.font = "40px Arial"
+        this.ctx.fillStyle = "white"
+        this.ctx.fillText(this.state.score.toString(), basePoint.X + padding, basePoint.Y + padding + 40)
+    }
+
+
     drawHold() {
         const sideBarWidth = 200
         const gridSize = sideBarWidth / 6
@@ -287,14 +352,11 @@ export default class GameField implements Field {
         this.state.hold = tmp
 
         this.state.holdAllowed = false
-
-        console.log(this.state.hold)
     }
 
     control() {
         document.addEventListener('keydown', (event) => {
             const key = event.key;
-            console.log(key)
             if (key === "ArrowRight" || key === "l") {
                 this.moveShapeRight()
             }
@@ -335,6 +397,9 @@ export default class GameField implements Field {
             while (this.checkShapeOutOfBounds()) {
                 this.state.activeShape?.MoveRight()
             }
+        }
+        if (this.checkShapeCollision()) {
+            this.state.activeShape?.Rotate(false)
         }
         this.addActiveShapeToState()
     }
@@ -431,7 +496,6 @@ export default class GameField implements Field {
                 }
                 const stateUnit = this.state.field[shapePosition.Y + i][shapePosition.X + j]
                 if (shapeUnit > 0 && stateUnit > 0) {
-                    console.log("shape unit:", shapeUnit, "state unit:", stateUnit, "i:", i, "j:", j)
                     return true
                 }
             }
@@ -447,11 +511,10 @@ export default class GameField implements Field {
 
         const shapeData = this.state.activeShape.GetData()
         const shapePosition = this.state.activeShape.GetPosition()
+
         for (let i = 0; i < shapeData.length; i++) {
-            const row = shapeData[i]
-            for (let j = 0; j < row.length; j++) {
-                const shapeUnit = row[j]
-                if (!shapeUnit) {
+            for (let j = 0; j < shapeData[i].length; j++) {
+                if (shapeData[i][j] === 0) {
                     continue
                 }
                 this.state.field[shapePosition.Y + i][shapePosition.X + j] = 0

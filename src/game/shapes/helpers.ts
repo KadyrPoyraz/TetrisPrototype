@@ -1,8 +1,3 @@
-const matrixA = [
-    [0, 0, 0, 0],
-    [0, 0, 0, 0],
-    [0, 0, 0, 0],
-]
 
 export function rotateMatrix(matrix: number[][], clockwise: boolean) {
     const length = matrix.length
@@ -19,10 +14,10 @@ export function rotateMatrix(matrix: number[][], clockwise: boolean) {
                 matrix[outerL - outer][outerL - j] = matrix[j][outerL - outer]
                 matrix[j][outerL - outer] = temp
             } else {
-                matrix[outer][j] = matrix[outer][outerL - j]
-                matrix[outer][outerL - j] = matrix[outerL - j][outerL - outer]
-                matrix[outerL - j][outerL - outer] = matrix[outerL - outer][j]
-                matrix[outerL - outer][j] = temp
+                matrix[outer][j] = matrix[j][outerL - outer]
+                matrix[j][outerL - outer] = matrix[outerL - outer][outerL-j]
+                matrix[outerL - outer][outerL-j] = matrix[outerL-j][outer]
+                matrix[outerL-j][outer] = temp
             }
         }
     }
